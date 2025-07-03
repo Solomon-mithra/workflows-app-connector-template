@@ -1,0 +1,3 @@
+module_settings:
+  module_name: "Read Google Sheet Data"
+  module_description: "Read data from Google Sheets"

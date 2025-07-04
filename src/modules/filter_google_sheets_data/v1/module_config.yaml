@@ -1,0 +1,3 @@
+module_settings:
+  module_name: "Filter Google Sheets Data"
+  module_description: "Filter and retrieve rows from Google Sheets that contain a specific value"

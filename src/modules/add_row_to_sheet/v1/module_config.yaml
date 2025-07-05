@@ -1,0 +1,3 @@
+module_settings:
+  module_name: "Add Row to Google Sheet"
+  module_description: "Add a new row with data to an existing Google Sheet"

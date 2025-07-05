@@ -8,8 +8,7 @@
       "id": "sheet_id",
       "label": "Google Sheets ID",
       "description": "Enter the Google Sheets ID (the long string from the URL)",
-      "default": "",
-      "required": true
+      "default": ""
     },
     {
       "type": "string",
@@ -17,9 +16,8 @@
       "label": "Google Sheets API Key",
       "description": "Enter your Google Sheets API key",
       "default": "",
-      "required": true,
       "ui_options": {
-        "ui_widget": "password"
+        "is_password": true
       }
     },
     {
@@ -38,16 +36,14 @@
           }
         ]
       },
-      "default": "",
-      "required": true
+      "default": ""
     },
     {
       "type": "string",
       "id": "filter_value",
       "label": "Filter Value",
       "description": "Enter the value to search for in the sheet data (case-insensitive)",
-      "default": "",
-      "required": true
+      "default": ""
     },
     {
       "type": "string",

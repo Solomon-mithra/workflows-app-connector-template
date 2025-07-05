@@ -1,0 +1,3 @@
+module_settings:
+  module_name: "Update Google Sheet Row"
+  module_description: "Update all rows in Google Sheet where a key column matches a value, updating only specified cells."

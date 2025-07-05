@@ -1,0 +1,107 @@
+{
+  "metadata": {
+    "workflows_module_schema_version": "1.0.0"
+  },
+  "fields": [
+    {
+      "type": "string",
+      "id": "sheet_id",
+      "label": "Google Sheets ID",
+      "description": "Enter the Google Sheets ID (the long string from the URL)",
+      "default": ""
+    },
+    {
+      "type": "string",
+      "id": "api_key",
+      "label": "Google Sheets API Key",
+      "description": "Enter your Google Sheets API key (for reading sheet information only)",
+      "default": "",
+      "ui_options": {
+        "is_password": true
+      }
+    },
+    {
+      "type": "string",
+      "id": "service_account_json",
+      "label": "Service Account JSON",
+      "description": "Complete Google service account JSON credentials (required for updating data). Download from Google Cloud Console.",
+      "default": "",
+      "required": true,
+      "ui_options": {
+        "is_password": true,
+        "multiline": true
+      }
+    },
+    {
+      "type": "object",
+      "id": "sheet_name",
+      "label": "Sheet Name",
+      "description": "Select the sheet/tab to update (will populate after entering Sheet ID and API Key)",
+      "ui_options": {
+        "ui_widget": "SelectWidget"
+      },
+      "content": {
+        "type": ["managed"],
+        "content_objects": [
+          { "id": "sheet_names" }
+        ]
+      },
+      "default": ""
+    },
+    {
+      "type": "object",
+      "id": "key_column",
+      "label": "Key Column",
+      "description": "Select the column to match for updating a row (populated dynamically after selecting sheet)",
+      "ui_options": { "ui_widget": "SelectWidget" },
+      "content": {
+        "type": ["managed"],
+        "content_objects": [ { "id": "column_names" } ]
+      },
+      "default": ""
+    },
+    {
+      "type": "object",
+      "id": "key_value",
+      "label": "Key Value",
+      "description": "Select the value to match in the key column (populated dynamically after selecting column)",
+      "ui_options": { "ui_widget": "SelectWidget" },
+      "content": {
+        "type": ["managed"],
+        "content_objects": [ { "id": "column_values" } ]
+      },
+      "default": ""
+    },
+    {
+      "type": "array",
+      "id": "row_data",
+      "label": "Row Data",
+      "description": "Edit the values for this row. Each item contains the column name and the value for that column.",
+      "items": {
+        "type": "object",
+        "fields": [
+          {
+            "type": "object",
+            "id": "column_name",
+            "label": "Column Name",
+            "description": "Name of the column",
+            "ui_options": { "ui_widget": "SelectWidget" },
+            "content": {
+              "type": ["managed"],
+              "content_objects": [ { "id": "column_names" } ]
+            },
+            "default": ""
+          },
+          {
+            "type": "string",
+            "id": "column_value",
+            "label": "Column Value",
+            "description": "Value for this column",
+            "default": ""
+          }
+        ]
+      },
+      "default": []
+    }
+  ]
+}

@@ -5,9 +5,17 @@ WORKDIR /usr/src/app
 
 # upgrade to latest pip
 RUN pip install --upgrade pip
+
+# Install OS libs needed by cryptography and Google Auth
 RUN apt-get update && \
     apt-get upgrade -y && \
-    apt-get install -y git
+    apt-get install -y --no-install-recommends \
+    git \
+    build-essential \
+    libssl-dev \
+    libffi-dev \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install workflows-cdk package
 RUN pip install git+https://github.com/stacksyncdata/workflows-cdk.git@prod
@@ -23,4 +31,4 @@ COPY / .
 EXPOSE 8080
 
 # set environment variable and start gunicorn
-CMD exec gunicorn --bind :8080 --workers 1 --threads 8 --timeout 0 main:app
+CMD exec gunicorn --preload --bind :8080 --workers 1 --threads 1 --timeout 0 main:app

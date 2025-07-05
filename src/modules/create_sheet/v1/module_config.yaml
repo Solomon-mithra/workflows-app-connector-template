@@ -1,0 +1,3 @@
+module_settings:
+  module_name: "Create New Google Sheet"
+  module_description: "Create a new Google Sheets spreadsheet with specified title and initial setup"

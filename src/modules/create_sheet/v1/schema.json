@@ -1,0 +1,33 @@
+{
+  "metadata": {
+    "workflows_module_schema_version": "1.0.0"
+  },
+  "fields": [
+    {
+      "type": "string",
+      "id": "sheet_id",
+      "label": "Google Sheets ID",
+      "description": "Enter the Google Sheets ID (the long string from the URL)",
+      "default": ""
+    },
+    {
+      "type": "string",
+      "id": "service_account_json",
+      "label": "Service Account JSON",
+      "description": "Complete Google service account JSON credentials (required for creating sheets). Download from Google Cloud Console.",
+      "default": "",
+      "required": true,
+      "ui_options": {
+        "is_password": true,
+        "multiline": true
+      }
+    },
+    {
+      "type": "string",
+      "id": "tab_sheet_name",
+      "label": "Tab Sheet Name",
+      "description": "Name for the new sheet/tab to create.",
+      "default": ""
+    }
+  ]
+}

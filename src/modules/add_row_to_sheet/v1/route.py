@@ -478,3 +478,28 @@ def execute():
         print(f"DEBUG: /execute error = {e}")
         print(f"DEBUG: Execute traceback = {traceback.format_exc()}")
         return Response.error(str(e))
+
+# @router.route("/schema", methods=["POST"])
+# def schema():
+#     """
+#     Dynamically generate the schema for add_row_to_sheet, loading row_data fields based on sheet headers.
+#     """
+#     try:
+#         request = Request(flask_request)
+#         data = request.data
+
+#         # Get the current form data
+#         form_data = data.get("form_data", {})
+#         print(f"DEBUG: Schema request form_data = {form_data}")
+#         # Load your base schema from the schema.json file
+#         schema_path = os.path.join(os.path.dirname(__file__), "schema.json")
+#         with open(schema_path, "r") as f:
+#             base_schema = json.load(f)
+#         print(f"DEBUG: Loaded base schema = {base_schema}")
+#         # Apply any dynamic modifications based on form_data
+#         # For example, modify field visibility or validation
+
+#         return Response(data=base_schema)
+
+#     except Exception as e:
+#         return Response.error(str(e))

@@ -20,6 +20,7 @@
         "type": ["managed"],
         "content_objects": [ { "id": "sheet_names" } ]
       },
+      "on_action": { "load_schema": true },
       "default": ""
     },
     {

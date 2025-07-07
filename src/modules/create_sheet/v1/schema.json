@@ -12,21 +12,9 @@
     },
     {
       "type": "string",
-      "id": "service_account_json",
-      "label": "Service Account JSON",
-      "description": "Complete Google service account JSON credentials (required for creating sheets). Download from Google Cloud Console.",
-      "default": "",
-      "required": true,
-      "ui_options": {
-        "is_password": true,
-        "multiline": true
-      }
-    },
-    {
-      "type": "string",
       "id": "tab_sheet_name",
-      "label": "Tab Sheet Name",
-      "description": "Name for the new sheet/tab to create.",
+      "label": "Tab Name",
+      "description": "Name of the new tab to create",
       "default": ""
     }
   ]

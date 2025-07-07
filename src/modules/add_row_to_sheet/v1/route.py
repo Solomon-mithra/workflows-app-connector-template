@@ -2,22 +2,9 @@ from flask import request as flask_request
 from workflows_cdk import Response, Request
 from main import router
 import requests
-import traceback
+from urllib.parse import quote
 import os
 import json
-from urllib.parse import quote
-
-# Google API imports for service account authentication
-try:
-    import googleapiclient.discovery
-    from google.oauth2 import service_account
-    GOOGLE_LIBS_AVAILABLE = True
-except ImportError:
-    GOOGLE_LIBS_AVAILABLE = False
-
-print("DEBUG: add_row_to_sheet/v1/route.py is being loaded!")
-
-import os
 
 # === ENVIRONMENT VARIABLES ===
 API_KEY = os.environ.get("GOOGLE_SHEETS_API_KEY")
@@ -132,19 +119,19 @@ def add_row_with_service_account(spreadsheet_id, sheet_name, row_values, target_
         print(f"DEBUG: Service account add row traceback: {traceback.format_exc()}")
         return False, error_msg
 
-def get_sheets_with_api_v4(spreadsheet_id, api_key):
+def get_sheets_with_api_v4(spreadsheet_id):
     """
     Use Google Sheets API v4 to get sheet information.
     """
     try:
-        print(f"DEBUG: get_sheets_with_api_v4 called with spreadsheet_id={spreadsheet_id}, api_key={'[PROVIDED]' if api_key else '[MISSING]'}")
+        print(f"DEBUG: get_sheets_with_api_v4 called with spreadsheet_id={spreadsheet_id}, api_key={'[PROVIDED]' if API_KEY else '[MISSING]'}")
         
-        if not api_key:
+        if not API_KEY:
             print("DEBUG: API key is missing")
             return []
         
         # Official API v4 endpoint for getting spreadsheet metadata
-        metadata_url = f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}?key={api_key}"
+        metadata_url = f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}?key={API_KEY}"
         
         print(f"DEBUG: Fetching metadata from: {metadata_url}")
         
@@ -303,8 +290,12 @@ def content():
         # Get required parameters from form_data
         form_data = data.get("form_data", {})
         sheet_id = form_data.get("sheet_id", "")
-        api_key = form_data.get("api_key", "")
-        service_account_json = form_data.get("service_account_json", "")
+        sheet_name_obj = form_data.get("sheet_name", "")
+        sheet_name = ""
+        if isinstance(sheet_name_obj, dict):
+            sheet_name = sheet_name_obj.get("id", "") or sheet_name_obj.get("label", "") or sheet_name_obj.get("value", "")
+        elif isinstance(sheet_name_obj, str):
+            sheet_name = sheet_name_obj
 
         # Get requested content objects
         content_object_names = data.get("content_object_names", [])
@@ -312,8 +303,8 @@ def content():
 
         print(f"DEBUG: Content object names requested = {content_object_names}")
         print(f"DEBUG: sheet_id = {sheet_id}")
-        print(f"DEBUG: api_key = {'[PROVIDED]' if api_key else '[NOT PROVIDED]'}")
-        print(f"DEBUG: service_account_json = {'[PROVIDED]' if service_account_json else '[NOT PROVIDED]'}")
+        print(f"DEBUG: api_key = {'[PROVIDED]' if API_KEY else '[NOT PROVIDED]'}")
+        print(f"DEBUG: service_account_json = {'[PROVIDED]' if SERVICE_ACCOUNT_JSON else '[NOT PROVIDED]'}")
 
         # Process each requested content object
         for content_name in content_object_names:
@@ -321,7 +312,7 @@ def content():
                 print("DEBUG: Processing sheet_names content object")
                 
                 # If no sheet_id or api_key, return empty list
-                if not sheet_id or not api_key:
+                if not sheet_id or not API_KEY:
                     print("DEBUG: Missing sheet_id or api_key, returning empty sheet_names")
                     content_objects.append({
                         "content_object_name": "sheet_names",
@@ -331,7 +322,7 @@ def content():
 
                 # Get sheet information using API v4 (still use API key for reading metadata)
                 print("DEBUG: Fetching sheets using API v4")
-                available_sheets = get_sheets_with_api_v4(sheet_id, api_key)
+                available_sheets = get_sheets_with_api_v4(sheet_id)
                 
                 # Format for StackSync
                 sheet_options = []
@@ -346,6 +337,41 @@ def content():
                 content_objects.append({
                     "content_object_name": "sheet_names",
                     "data": sheet_options
+                })
+            elif content_name.get("id") == "column_names":
+                print("DEBUG: Processing column_names content object")
+                # If no sheet_id or sheet_name, return empty list
+                if not sheet_id or not sheet_name:
+                    print("DEBUG: Missing sheet_id or sheet_name, returning empty column_names")
+                    content_objects.append({
+                        "content_object_name": "column_names",
+                        "data": []
+                    })
+                    continue
+                # Get column names (header) from the sheet using API key
+                header = []
+                try:
+                    range_string = f"{sheet_name}!1:1"
+                    encoded_range = quote(range_string)
+                    url = f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}/values/{encoded_range}?key={API_KEY}"
+                    resp = requests.get(url, timeout=10)
+                    if resp.status_code == 200:
+                        data = resp.json().get("values", [])
+                        if data:
+                            header = data[0]
+                except Exception as e:
+                    print(f"DEBUG: Failed to fetch column names: {str(e)}")
+                # Format for StackSync
+                column_options = []
+                for col in header:
+                    column_options.append({
+                        "value": {"id": col, "label": col},
+                        "label": col
+                    })
+                print(f"DEBUG: Formatted {len(column_options)} column options")
+                content_objects.append({
+                    "content_object_name": "column_names",
+                    "data": column_options
                 })
 
         print(f"DEBUG: Returning {len(content_objects)} content objects")
@@ -374,8 +400,7 @@ def execute():
         
         # Get required parameters
         sheet_id = data.get("sheet_id", "")
-        api_key = data.get("api_key", "")
-        service_account_json = data.get("service_account_json", "")
+        service_account_json = SERVICE_ACCOUNT_JSON
         sheet_name_obj = data.get("sheet_name", "")
         row_data = data.get("row_data", [])
         target_row = data.get("target_row")
@@ -396,15 +421,14 @@ def execute():
         if not sheet_id:
             return Response.error("Sheet ID is required")
         
+        if not service_account_json:
+            return Response.error("Service account JSON is required (from env)")
+        
         if not sheet_name:
             return Response.error("Sheet name is required")
         
         if not row_data:
             return Response.error("Row data is required")
-
-        # Check if service_account_json is provided
-        if not service_account_json:
-            return Response.error("Service account JSON credentials are required for writing data")
 
         # Extract values from row_data array
         row_values = []

@@ -17,21 +17,17 @@ def execute():
         request_obj = Request(flask_request)
         data = request_obj.data
         sheet_id = data.get("sheet_id", "")
-        service_account_json = data.get("service_account_json", "")
         tab_sheet_name = data.get("tab_sheet_name", "")
         if not sheet_id:
             return Response.error("Sheet ID is required")
-        if not service_account_json:
-            return Response.error("Service account JSON is required")
+        if not SERVICE_ACCOUNT_JSON:
+            return Response.error("Service account JSON is required (from env)")
         if not tab_sheet_name:
             return Response.error("Tab Sheet Name is required")
         # Import inside function to avoid PyO3 re-init error
         from google.oauth2 import service_account
         from google.auth.transport.requests import Request as GoogleRequest
-        if isinstance(service_account_json, str):
-            account_info = json.loads(service_account_json)
-        else:
-            account_info = service_account_json
+        account_info = SERVICE_ACCOUNT_JSON
         scopes = [
             "https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive"

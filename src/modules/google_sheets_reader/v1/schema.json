@@ -11,52 +11,16 @@
       "default": ""
     },
     {
-      "type": "string",
-      "id": "api_key",
-      "label": "Google Sheets API Key",
-      "description": "Enter your Google Sheets API key",
-      "default": "",
-      "ui_options": {
-        "is_password": true
-      }
-    },
-    {
       "type": "object",
       "id": "sheet_name",
       "label": "Sheet Name",
-      "description": "Select the sheet/tab to read data from (will populate after entering Sheet ID and API Key)",
-      "ui_options": {
-        "ui_widget": "SelectWidget"
-      },
+      "description": "Select the sheet/tab to read (populated after entering Sheet ID)",
+      "ui_options": { "ui_widget": "SelectWidget" },
       "content": {
         "type": ["managed"],
-        "content_objects": [
-          {
-            "id": "sheet_names"
-          }
-        ]
+        "content_objects": [ { "id": "sheet_names" } ]
       },
       "default": ""
-    },
-    {
-      "type": "object",
-      "id": "num_rows",
-      "label": "Number of Rows",
-      "description": "Select how many rows to fetch (will populate after selecting a sheet)",
-      "ui_options": {
-        "ui_widget": "SelectWidget",
-        "placeholder": "Select number of rows"
-      },
-      "content": {
-        "type": ["managed"],
-        "content_objects": [
-          {
-            "id": "row_options"
-          }
-        ]
-      },
-      "default": "",
-      "required": false
     }
   ]
 }

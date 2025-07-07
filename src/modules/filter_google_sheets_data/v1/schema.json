@@ -11,61 +11,75 @@
       "default": ""
     },
     {
-      "type": "string",
-      "id": "api_key",
-      "label": "Google Sheets API Key",
-      "description": "Enter your Google Sheets API key",
-      "default": "",
-      "ui_options": {
-        "is_password": true
-      }
-    },
-    {
       "type": "object",
       "id": "sheet_name",
       "label": "Sheet Name",
-      "description": "Select the sheet/tab to filter data from (will populate after entering Sheet ID and API Key)",
-      "ui_options": {
-        "ui_widget": "SelectWidget"
-      },
+      "description": "Select the sheet/tab to filter (populated after entering Sheet ID)",
+      "ui_options": { "ui_widget": "SelectWidget" },
       "content": {
         "type": ["managed"],
         "content_objects": [
           {
-            "id": "sheet_names"
+            "id": "sheet_names",
+            "content_object_depends_on_fields": [{ "id": "sheet_id" }]
           }
         ]
       },
       "default": ""
     },
     {
-      "type": "string",
-      "id": "filter_value",
-      "label": "Filter Value",
-      "description": "Enter the value to search for in the sheet data (case-insensitive)",
-      "default": ""
-    },
-    {
-      "type": "string",
-      "id": "number_of_rows",
-      "label": "Maximum Rows to Return",
-      "description": "Limit the number of filtered results (leave empty for all matches)",
-      "ui_options": {
-        "ui_widget": "SelectWidget"
-      },
-      "choices": {
-        "values": [
-          {"value": "", "label": "All matching rows"},
-          {"value": "10", "label": "10 rows"},
-          {"value": "25", "label": "25 rows"},
-          {"value": "50", "label": "50 rows"},
-          {"value": "100", "label": "100 rows"},
-          {"value": "250", "label": "250 rows"},
-          {"value": "500", "label": "500 rows"}
+      "type": "array",
+      "id": "filters",
+      "label": "Filters",
+      "description": "Filters to apply. Each item is a column/operator/value triple.",
+      "items": {
+        "type": "object",
+        "fields": [
+          {
+            "type": "object",
+            "id": "column_name",
+            "label": "Column Name",
+            "description": "Column to filter",
+            "ui_options": { "ui_widget": "SelectWidget" },
+            "content": {
+              "type": ["managed"],
+              "content_objects": [
+                {
+                  "id": "column_names",
+                  "content_object_depends_on_fields": [{ "id": "sheet_id" }, { "id": "sheet_name" }]
+                }
+              ]
+            },
+            "default": ""
+          },
+          {
+            "type": "object",
+            "id": "operator",
+            "label": "Operator",
+            "description": "Comparison operator",
+            "ui_options": { "ui_widget": "SelectWidget" },
+            "choices": {
+              "values": [
+                { "value": { "id": "=", "label": "=" }, "label": "=" },
+                { "value": { "id": "!=", "label": "!=" }, "label": "!=" },
+                { "value": { "id": ">", "label": ">" }, "label": ">" },
+                { "value": { "id": "<", "label": "<" }, "label": "<" },
+                { "value": { "id": ">=", "label": ">=" }, "label": ">=" },
+                { "value": { "id": "<=", "label": "<=" }, "label": "<=" }
+              ]
+            },
+            "default": { "id": "=", "label": "=" }
+          },
+          {
+            "type": "string",
+            "id": "value",
+            "label": "Value",
+            "description": "Value to compare",
+            "default": ""
+          }
         ]
       },
-      "default": "",
-      "required": false
+      "default": []
     }
   ]
 }

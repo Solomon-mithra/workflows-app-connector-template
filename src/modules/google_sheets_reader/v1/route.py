@@ -6,16 +6,23 @@ import csv
 import io
 import traceback
 from urllib.parse import quote
+import json
+import os
 
 print("DEBUG: google_sheets_reader/v1/route.py is being loaded!")
-
-import os
 
 # === ENVIRONMENT VARIABLES ===
 API_KEY = os.environ.get("GOOGLE_SHEETS_API_KEY")
 SERVICE_ACCOUNT_JSON_STR = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON")
 SERVICE_ACCOUNT_JSON = json.loads(SERVICE_ACCOUNT_JSON_STR) if SERVICE_ACCOUNT_JSON_STR else None
 # === END ENVIRONMENT VARIABLES ===
+
+def get_first_nonempty(*args):
+    """Return the first non-empty, non-None, non-blank string from args."""
+    for v in args:
+        if v is not None and str(v).strip() != "":
+            return v
+    return None
 
 def get_sheets_with_api_v4(spreadsheet_id, api_key=None):
     """
@@ -303,8 +310,15 @@ def content():
 
         # Get required parameters from form_data
         form_data = data.get("form_data", {})
-        sheet_id = form_data.get("sheet_id", "")
-        api_key = form_data.get("api_key", "")
+        sheet_id = get_first_nonempty(
+            form_data.get("sheet_id"),
+            data.get("sheet_id"),
+        )
+        api_key = get_first_nonempty(
+            form_data.get("api_key"),
+            data.get("api_key"),
+            API_KEY
+        )
 
         # Get requested content objects
         content_object_names = data.get("content_object_names", [])
@@ -449,89 +463,45 @@ def content():
 def execute():
     """
     Execute the Google Sheets reading operation.
-    Fetches data from specified sheet using API key and sheet ID.
+    Fetches all data from specified sheet using API key and sheet ID.
     """
     try:
         print("DEBUG: google_sheets_reader /execute called")
-        
         # Parse the request
         request = Request(flask_request)
         data = request.data
-
         print(f"DEBUG: Parsed data = {data}")
-        
         # Get required parameters
         sheet_id = data.get("sheet_id", "")
-        api_key = data.get("api_key", "")
+        api_key = API_KEY
         sheet_name_obj = data.get("sheet_name", "")
-        num_rows_obj = data.get("num_rows", "all")
-        
         # Handle sheet_name - could be string, object from dropdown, or direct value
         sheet_name = ""
         if isinstance(sheet_name_obj, dict):
-            # StackSync format: {"id": "sheet_name", "label": "sheet_name"}
             sheet_name = sheet_name_obj.get("id", "") or sheet_name_obj.get("label", "") or sheet_name_obj.get("value", "")
         elif isinstance(sheet_name_obj, str):
             sheet_name = sheet_name_obj
-        
-        # Handle num_rows - could be string, object from dropdown, or direct value
-        num_rows = "all"
-        if isinstance(num_rows_obj, dict):
-            print(f"DEBUG: num_rows_obj is dict: {num_rows_obj}")
-            # StackSync format uses 'id' key directly
-            num_rows = num_rows_obj.get("id", "all")
-            print(f"DEBUG: Extracted num_rows from dict.id: {num_rows}")
-        elif isinstance(num_rows_obj, str) and num_rows_obj:
-            num_rows = num_rows_obj
-            print(f"DEBUG: num_rows_obj is string: {num_rows}")
-        else:
-            print(f"DEBUG: num_rows_obj is other type: {type(num_rows_obj)} = {num_rows_obj}")
-        
         print(f"DEBUG: Raw sheet_name_obj = {sheet_name_obj}")
         print(f"DEBUG: Processed sheet_name = {sheet_name}")
-        print(f"DEBUG: Raw num_rows_obj = {num_rows_obj}")
-        print(f"DEBUG: Processed num_rows = {num_rows}")
-        
         if not sheet_id:
             return Response.error("Sheet ID is required")
-        
         if not api_key:
             return Response.error("API key is required")
-        
         if not sheet_name:
             return Response.error("Sheet name is required")
-
         print(f"DEBUG: sheet_id = {sheet_id}")
         print(f"DEBUG: sheet_name = {sheet_name}")
         print(f"DEBUG: api_key = [PROVIDED]")
-        print(f"DEBUG: num_rows = {num_rows}")
-
         # Get data using API v4
         api_v4_data = get_sheet_data_with_api_v4(sheet_id, sheet_name, api_key)
-        
         if not api_v4_data:
             return Response.error("Failed to fetch data from Google Sheet")
-        
-        # Convert to structured format
         if len(api_v4_data) < 1:
             return Response.error("No data found in the sheet")
-        
         # First row as headers
         headers = api_v4_data[0]
         all_data_rows = api_v4_data[1:]
-        
-        # Apply row limit if specified
-        if num_rows == "all":
-            data_rows = all_data_rows
-        else:
-            try:
-                row_limit = int(num_rows)
-                data_rows = all_data_rows[:row_limit]
-                print(f"DEBUG: Limited to {len(data_rows)} rows (requested {row_limit})")
-            except (ValueError, TypeError):
-                print(f"DEBUG: Invalid row limit '{num_rows}', using all rows")
-                data_rows = all_data_rows
-        
+        data_rows = all_data_rows  # Always return all rows
         # Convert to JSON format
         structured_data = []
         for i, row in enumerate(data_rows):
@@ -541,30 +511,23 @@ def execute():
                 row_dict[header] = value
             row_dict["_row_number"] = i + 2  # +2 because first row is headers
             structured_data.append(row_dict)
-        
         print(f"DEBUG: Processed {len(structured_data)} data rows")
-        
         # Create response
         result = {
             "sheet_id": sheet_id,
             "sheet_name": sheet_name,
-            "num_rows": num_rows,
-            "total_available_rows": len(all_data_rows),
-            "returned_rows": len(data_rows),
             "headers": headers,
             "data": structured_data,
             "total_records": len(structured_data),
             "total_fields": len(headers)
         }
-        
         return Response(
             data=result,
             metadata={
                 "affected_records": len(structured_data),
-                "message": f"Successfully fetched {len(structured_data)} records from sheet '{sheet_name}' ({num_rows} rows requested)"
+                "message": f"Successfully fetched {len(structured_data)} records from sheet '{sheet_name}' (all rows)"
             }
         )
-                
     except Exception as e:
         print(f"DEBUG: /execute error = {e}")
         return Response.error(str(e))

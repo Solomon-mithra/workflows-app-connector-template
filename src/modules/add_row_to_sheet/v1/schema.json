@@ -11,42 +11,14 @@
       "default": ""
     },
     {
-      "type": "string",
-      "id": "api_key",
-      "label": "Google Sheets API Key",
-      "description": "Enter your Google Sheets API key (for reading sheet information only)",
-      "default": "",
-      "ui_options": {
-        "is_password": true
-      }
-    },
-    {
-      "type": "string",
-      "id": "service_account_json",
-      "label": "Service Account JSON",
-      "description": "Complete Google service account JSON credentials (required for writing data). Download from Google Cloud Console.",
-      "default": "",
-      "required": true,
-      "ui_options": {
-        "is_password": true,
-        "multiline": true
-      }
-    },
-    {
       "type": "object",
       "id": "sheet_name",
       "label": "Sheet Name",
-      "description": "Select the sheet/tab to add data to (will populate after entering Sheet ID and Service Account JSON)",
-      "ui_options": {
-        "ui_widget": "SelectWidget"
-      },
+      "description": "Select the sheet/tab to add data to (populated after entering Sheet ID)",
+      "ui_options": { "ui_widget": "SelectWidget" },
       "content": {
         "type": ["managed"],
-        "content_objects": [
-          {
-            "id": "sheet_names"
-          }
-        ]
+        "content_objects": [ { "id": "sheet_names" } ]
       },
       "default": ""
     },
@@ -54,15 +26,27 @@
       "type": "array",
       "id": "row_data",
       "label": "Row Data",
-      "description": "Data to add to the new row. Each item is a column value, in order.",
+      "description": "Data to add to the new row. Each item is a column/value pair.",
       "items": {
         "type": "object",
         "fields": [
           {
+            "type": "object",
+            "id": "column_name",
+            "label": "Column Name",
+            "description": "Target column",
+            "ui_options": { "ui_widget": "SelectWidget" },
+            "content": {
+              "type": ["managed"],
+              "content_objects": [ { "id": "column_names" } ]
+            },
+            "default": ""
+          },
+          {
             "type": "string",
             "id": "column_value",
             "label": "Column Value",
-            "description": "Value for this column",
+            "description": "Value to insert",
             "default": ""
           }
         ]

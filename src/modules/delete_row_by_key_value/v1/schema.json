@@ -14,23 +14,19 @@
       "type": "object",
       "id": "sheet_name",
       "label": "Sheet Name",
-      "description": "Select the sheet/tab to delete from (will populate after entering Sheet ID)",
-      "ui_options": {
-        "ui_widget": "SelectWidget"
-      },
+      "description": "Select the sheet/tab to delete rows from (populated after entering Sheet ID)",
+      "ui_options": { "ui_widget": "SelectWidget" },
       "content": {
         "type": ["managed"],
-        "content_objects": [
-          { "id": "sheet_names" }
-        ]
+        "content_objects": [ { "id": "sheet_names" } ]
       },
       "default": ""
     },
     {
       "type": "array",
       "id": "conditions",
-      "label": "Delete Conditions",
-      "description": "Add one or more conditions (column and value) for row deletion.",
+      "label": "Conditions",
+      "description": "Conditions to match for deletion. Each item is a key_column/key_value pair.",
       "items": {
         "type": "object",
         "fields": [
@@ -38,6 +34,7 @@
             "type": "object",
             "id": "key_column",
             "label": "Key Column",
+            "description": "Column to match",
             "ui_options": { "ui_widget": "SelectWidget" },
             "content": {
               "type": ["managed"],
@@ -49,12 +46,12 @@
             "type": "string",
             "id": "key_value",
             "label": "Key Value",
-            "description": "Enter the value to match for this column.",
+            "description": "Value to match for deletion",
             "default": ""
           }
         ]
       },
-      "minItems": 1
+      "default": []
     }
   ]
 }

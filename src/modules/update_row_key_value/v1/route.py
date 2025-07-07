@@ -3,9 +3,8 @@ from workflows_cdk import Response, Request
 from main import router
 import requests
 from urllib.parse import quote
-
-#updated
 import os
+import json
 
 # === ENVIRONMENT VARIABLES ===
 API_KEY = os.environ.get("GOOGLE_SHEETS_API_KEY")
@@ -13,32 +12,24 @@ SERVICE_ACCOUNT_JSON_STR = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON")
 SERVICE_ACCOUNT_JSON = json.loads(SERVICE_ACCOUNT_JSON_STR) if SERVICE_ACCOUNT_JSON_STR else None
 # === END ENVIRONMENT VARIABLES ===
 
-def get_sheets_with_api_v4(spreadsheet_id, api_key=None):
-    # Always use hardcoded API key
-    api_key = HARDCODED_API_KEY
+def get_sheets_with_api_v4(spreadsheet_id):
     try:
-        metadata_url = f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}?key={api_key}"
+        metadata_url = f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}?key={API_KEY}"
         response = requests.get(metadata_url, timeout=10)
         if response.status_code != 200:
             return []
         metadata = response.json()
         sheets = metadata.get('sheets', [])
-        available_sheets = []
-        for sheet in sheets:
-            properties = sheet.get('properties', {})
-            sheet_name = properties.get('title', 'Unknown')
-            sheet_id = properties.get('sheetId', 0)
-            available_sheets.append({"name": sheet_name, "gid": sheet_id})
-        return available_sheets
+        return [{"name": s['properties']['title'], "gid": s['properties']['sheetId']} for s in sheets]
     except Exception as e:
         print(f"DEBUG: get_sheets_with_api_v4 failed: {str(e)}")
         return []
 
-def get_sheet_header(spreadsheet_id, sheet_name, api_key):
+def get_sheet_header(spreadsheet_id, sheet_name):
     try:
         range_string = f"{sheet_name}!1:1"
         encoded_range = quote(range_string)
-        url = f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}/values/{encoded_range}?key={api_key}"
+        url = f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}/values/{encoded_range}?key={API_KEY}"
         resp = requests.get(url, timeout=10)
         if resp.status_code != 200:
             return []
@@ -50,6 +41,31 @@ def get_sheet_header(spreadsheet_id, sheet_name, api_key):
         print(f"DEBUG: get_sheet_header failed: {str(e)}")
         return []
 
+def get_column_values(spreadsheet_id, sheet_name, key_column):
+    try:
+        range_string = f"{sheet_name}"
+        encoded_range = quote(range_string)
+        url = f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}/values/{encoded_range}?key={API_KEY}"
+        resp = requests.get(url, timeout=10)
+        all_values = resp.json().get("values", [])
+        if not all_values or len(all_values) < 2:
+            return []
+        header = all_values[0]
+        if key_column not in header:
+            return []
+        col_idx = header.index(key_column)
+        value_options = []
+        seen = set()
+        for row in all_values[1:]:
+            val = row[col_idx] if col_idx < len(row) else ""
+            if val and val not in seen:
+                value_options.append({"value": {"id": val, "label": str(val)}, "label": str(val)})
+                seen.add(val)
+        return value_options
+    except Exception as e:
+        print(f"DEBUG: get_column_values failed: {str(e)}")
+        return []
+
 @router.route("/content", methods=["POST"])
 def content():
     try:
@@ -57,124 +73,49 @@ def content():
         data = request.data
         form_data = data.get("form_data", {})
         sheet_id = form_data.get("sheet_id", "")
-        api_key = form_data.get("api_key", "")
         sheet_name_obj = form_data.get("sheet_name", "")
         sheet_name = ""
         if isinstance(sheet_name_obj, dict):
             sheet_name = sheet_name_obj.get("id", "") or sheet_name_obj.get("label", "") or sheet_name_obj.get("value", "")
         elif isinstance(sheet_name_obj, str):
             sheet_name = sheet_name_obj
+        key_column_obj = form_data.get("key_column", "")
+        key_column = ""
+        if isinstance(key_column_obj, dict):
+            key_column = key_column_obj.get("id", "") or key_column_obj.get("label", "") or key_column_obj.get("value", "")
+        elif isinstance(key_column_obj, str):
+            key_column = key_column_obj
         content_object_names = data.get("content_object_names", [])
         content_objects = []
         for content_name in content_object_names:
             cid = content_name.get("id")
             if cid == "sheet_names":
-                if not sheet_id or not api_key:
+                if not sheet_id:
                     content_objects.append({"content_object_name": "sheet_names", "data": []})
                     continue
-                available_sheets = get_sheets_with_api_v4(sheet_id, api_key)
-                sheet_options = []
-                for sheet in available_sheets:
-                    sheet_options.append({
-                        "value": {"id": sheet["name"], "label": sheet["name"]},
-                        "label": sheet["name"]
-                    })
+                available_sheets = get_sheets_with_api_v4(sheet_id)
+                sheet_options = [{"value": {"id": s["name"], "label": s["name"]}, "label": s["name"]} for s in available_sheets]
                 content_objects.append({"content_object_name": "sheet_names", "data": sheet_options})
-            elif cid in ["key_columns", "column_names"]:
-                if not sheet_id or not api_key or not sheet_name:
-                    content_objects.append({"content_object_name": cid, "data": []})
-                    continue
-                header = get_sheet_header(sheet_id, sheet_name, api_key)
-                options = [{"value": {"id": col, "label": col}, "label": col} for col in header]
-                content_objects.append({"content_object_name": cid, "data": options})
-            elif cid == "key_values":
-                key_column = form_data.get("key_column", "")
-                if isinstance(key_column, dict):
-                    key_column = key_column.get("id", "") or key_column.get("label", "") or key_column.get("value", "")
-                elif not isinstance(key_column, str):
-                    key_column = str(key_column)
-                if not sheet_id or not api_key or not sheet_name or not key_column:
-                    content_objects.append({"content_object_name": "key_values", "data": []})
-                    continue
-                try:
-                    range_string = f"{sheet_name}"
-                    encoded_range = quote(range_string)
-                    url = f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}/values/{encoded_range}?key={api_key}"
-                    resp = requests.get(url, timeout=10)
-                    all_values = resp.json().get("values", [])
-                    if not all_values or len(all_values) < 2:
-                        content_objects.append({"content_object_name": "key_values", "data": []})
-                        continue
-                    header = all_values[0]
-                    if key_column not in header:
-                        content_objects.append({"content_object_name": "key_values", "data": []})
-                        continue
-                    col_idx = header.index(key_column)
-                    value_options = []
-                    seen = set()
-                    for row in all_values[1:]:
-                        val = row[col_idx] if col_idx < len(row) else ""
-                        if isinstance(val, dict):
-                            val_id = val.get("id") or val.get("label") or val.get("value")
-                        else:
-                            val_id = val
-                        if val_id and val_id not in seen:
-                            value_options.append({"value": {"id": val_id, "label": str(val_id)}, "label": str(val_id)})
-                            seen.add(val_id)
-                    content_objects.append({"content_object_name": "key_values", "data": value_options})
-                except Exception as e:
-                    content_objects.append({"content_object_name": "key_values", "data": []})
-            elif cid == "column_values":
-                key_column = form_data.get("key_column", "")
-                if isinstance(key_column, dict):
-                    key_column = key_column.get("id", "") or key_column.get("label", "") or key_column.get("value", "")
-                elif not isinstance(key_column, str):
-                    key_column = str(key_column)
-                if not sheet_id or not api_key or not sheet_name or not key_column:
-                    content_objects.append({"content_object_name": "column_values", "data": []})
-                    continue
-                try:
-                    range_string = f"{sheet_name}"
-                    encoded_range = quote(range_string)
-                    url = f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}/values/{encoded_range}?key={api_key}"
-                    resp = requests.get(url, timeout=10)
-                    all_values = resp.json().get("values", [])
-                    if not all_values or len(all_values) < 2:
-                        content_objects.append({"content_object_name": "column_values", "data": []})
-                        continue
-                    header = all_values[0]
-                    if key_column not in header:
-                        content_objects.append({"content_object_name": "column_values", "data": []})
-                        continue
-                    col_idx = header.index(key_column)
-                    value_options = []
-                    seen = set()
-                    for row in all_values[1:]:
-                        val = row[col_idx] if col_idx < len(row) else ""
-                        if isinstance(val, dict):
-                            val_id = val.get("id") or val.get("label") or val.get("value")
-                        else:
-                            val_id = val
-                        if val_id and val_id not in seen:
-                            value_options.append({"value": {"id": val_id, "label": str(val_id)}, "label": str(val_id)})
-                            seen.add(val_id)
-                    content_objects.append({"content_object_name": "column_values", "data": value_options})
-                except Exception as e:
-                    content_objects.append({"content_object_name": "column_values", "data": []})
-            elif cid == "update_columns":
-                if not sheet_id or not api_key or not sheet_name:
-                    content_objects.append({"content_object_name": "update_columns", "data": []})
-                    continue
-                header = get_sheet_header(sheet_id, sheet_name, api_key)
-                options = [{"value": {"id": col, "label": col}, "label": col} for col in header]
-                content_objects.append({"content_object_name": "update_columns", "data": options})
             elif cid == "column_names":
-                if not sheet_id or not api_key or not sheet_name:
+                if not sheet_id or not sheet_name:
                     content_objects.append({"content_object_name": "column_names", "data": []})
                     continue
-                header = get_sheet_header(sheet_id, sheet_name, api_key)
+                header = get_sheet_header(sheet_id, sheet_name)
                 options = [{"value": {"id": col, "label": col}, "label": col} for col in header]
                 content_objects.append({"content_object_name": "column_names", "data": options})
+            elif cid == "key_columns":
+                if not sheet_id or not sheet_name:
+                    content_objects.append({"content_object_name": "key_columns", "data": []})
+                    continue
+                header = get_sheet_header(sheet_id, sheet_name)
+                options = [{"value": {"id": col, "label": col}, "label": col} for col in header]
+                content_objects.append({"content_object_name": "key_columns", "data": options})
+            elif cid == "key_values":
+                if not sheet_id or not sheet_name or not key_column:
+                    content_objects.append({"content_object_name": "key_values", "data": []})
+                    continue
+                value_options = get_column_values(sheet_id, sheet_name, key_column)
+                content_objects.append({"content_object_name": "key_values", "data": value_options})
         return Response(data={"content_objects": content_objects})
     except Exception as e:
         return Response(data={"content_objects": []})
@@ -185,8 +126,7 @@ def execute():
         request = Request(flask_request)
         data = request.data
         sheet_id = data.get("sheet_id", "")
-        api_key = data.get("api_key", "")
-        service_account_json = data.get("service_account_json", "")
+        service_account_json = SERVICE_ACCOUNT_JSON
         sheet_name_obj = data.get("sheet_name", "")
         key_column_obj = data.get("key_column", "")
         key_value_obj = data.get("key_value", "")
@@ -202,14 +142,17 @@ def execute():
         elif isinstance(key_column_obj, str):
             key_column = key_column_obj
         key_value = ""
-        if isinstance(key_value_obj, dict):
-            key_value = key_value_obj.get("id", "") or key_value_obj.get("label", "") or key_value_obj.get("value", "")
-        elif isinstance(key_value_obj, str):
+        # Now key_value is always a string
+        if isinstance(key_value_obj, str):
             key_value = key_value_obj
+        elif isinstance(key_value_obj, dict):
+            key_value = key_value_obj.get("id", "") or key_value_obj.get("label", "") or key_value_obj.get("value", "")
+        else:
+            key_value = str(key_value_obj)
         if not sheet_id:
             return Response.error("Sheet ID is required")
         if not service_account_json:
-            return Response.error("Service account JSON is required")
+            return Response.error("Service account JSON is required (from env)")
         if not sheet_name:
             return Response.error("Sheet name is required")
         if not row_data:
@@ -218,7 +161,7 @@ def execute():
             return Response.error("Key column and key value are required")
         range_string = f"{sheet_name}"
         encoded_range = quote(range_string)
-        url = f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}/values/{encoded_range}?key={api_key}"
+        url = f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}/values/{encoded_range}?key={API_KEY}"
         resp = requests.get(url, timeout=10)
         all_values = resp.json().get("values", [])
         if not all_values or len(all_values) < 2:
@@ -237,11 +180,7 @@ def execute():
             return Response.error(f"No rows found where '{key_column}' == '{key_value}'")
         from google.oauth2 import service_account
         from google.auth.transport.requests import Request as GoogleRequest
-        import json
-        if isinstance(service_account_json, str):
-            account_info = json.loads(service_account_json)
-        else:
-            account_info = service_account_json
+        account_info = service_account_json
         scopes = ["https://www.googleapis.com/auth/spreadsheets"]
         creds = service_account.Credentials.from_service_account_info(account_info, scopes=scopes)
         creds.refresh(GoogleRequest())

@@ -1,0 +1,71 @@
+{
+  "metadata": {
+    "workflows_module_schema_version": "1.0.0"
+  },
+  "fields": [
+    {
+      "type": "string",
+      "id": "sheet_id",
+      "label": "Google Sheets ID",
+      "description": "Enter the Google Sheets ID (the long string from the URL)",
+      "default": ""
+    },
+    {
+      "type": "string",
+      "id": "api_key",
+      "label": "Google Sheets API Key",
+      "description": "Enter your Google Sheets API key",
+      "default": "",
+      "ui_options": {
+        "is_password": true
+      }
+    },
+    {
+      "type": "object",
+      "id": "sheet_name",
+      "label": "Sheet Name",
+      "description": "Select the sheet/tab to filter data from (will populate after entering Sheet ID and API Key)",
+      "ui_options": {
+        "ui_widget": "SelectWidget"
+      },
+      "content": {
+        "type": ["managed"],
+        "content_objects": [
+          {
+            "id": "sheet_names"
+          }
+        ]
+      },
+      "default": ""
+    },
+    {
+      "type": "string",
+      "id": "filter_value",
+      "label": "Filter Value",
+      "description": "Enter the value to search for in the sheet data (case-insensitive)",
+      "default": ""
+    },
+    {
+      "type": "string",
+      "id": "number_of_rows",
+      "label": "Maximum Rows to Return",
+      "description": "Limit the number of filtered results (leave empty for all matches)",
+      "ui_options": {
+        "ui_widget": "SelectWidget"
+      },
+      "choices": {
+        "values": [
+          {"value": "", "label": "All matching rows"},
+          {"value": "10", "label": "10 rows"},
+          {"value": "25", "label": "25 rows"},
+          {"value": "50", "label": "50 rows"},
+          {"value": "100", "label": "100 rows"},
+          {"value": "250", "label": "250 rows"},
+          {"value": "500", "label": "500 rows"}
+        ]
+      },
+      "default": "",
+      "required": false
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "metadata": {
+    "workflows_module_schema_version": "1.0.0"
+  },
+  "fields": [
+    {
+      "type": "string",
+      "id": "sheet_id",
+      "label": "Google Sheets ID",
+      "description": "Enter the Google Sheets ID (the long string from the URL)",
+      "default": ""
+    },
+    {
+      "type": "object",
+      "id": "sheet_name",
+      "label": "Sheet Name",
+      "description": "Select the sheet/tab to delete from (will populate after entering Sheet ID)",
+      "ui_options": {
+        "ui_widget": "SelectWidget"
+      },
+      "content": {
+        "type": ["managed"],
+        "content_objects": [
+          { "id": "sheet_names" }
+        ]
+      },
+      "default": ""
+    },
+    {
+      "type": "array",
+      "id": "conditions",
+      "label": "Delete Conditions",
+      "description": "Add one or more conditions (column and value) for row deletion.",
+      "items": {
+        "type": "object",
+        "fields": [
+          {
+            "type": "object",
+            "id": "key_column",
+            "label": "Key Column",
+            "ui_options": { "ui_widget": "SelectWidget" },
+            "content": {
+              "type": ["managed"],
+              "content_objects": [ { "id": "column_names" } ]
+            },
+            "default": ""
+          },
+          {
+            "type": "string",
+            "id": "key_value",
+            "label": "Key Value",
+            "description": "Enter the value to match for this column.",
+            "default": ""
+          }
+        ]
+      },
+      "minItems": 1
+    }
+  ]
+}
+

@@ -1,0 +1,3 @@
+module_settings:
+  module_name: "Delete Google Sheet Row"
+  module_description: "Delete all rows in Google Sheet where a key column matches a value."

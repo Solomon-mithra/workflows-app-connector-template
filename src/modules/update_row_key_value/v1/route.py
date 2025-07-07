@@ -4,6 +4,7 @@ from main import router
 import requests
 from urllib.parse import quote
 
+#updated
 import os
 
 # === ENVIRONMENT VARIABLES ===

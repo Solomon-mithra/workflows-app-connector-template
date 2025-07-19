@@ -7,6 +7,7 @@ requests
 gunicorn==22.0.0
 # Additional Requirements
 ## Add your additional requirements here
+workflows-cdk
 authlib==1.1.0
 sentry-sdk[Flask]
 

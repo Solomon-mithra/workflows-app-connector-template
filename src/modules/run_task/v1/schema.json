@@ -1,0 +1,176 @@
+{
+  "metadata": {
+    "workflows_module_schema_version": "1.0.0"
+  },
+  "fields": [
+    {
+      "id": "task",
+      "type": "string",
+      "label": "Task Instructions",
+      "description": "Instructions for what the agent should do.",
+      "validation": { "required": true },
+      "ui_options": { "ui_widget": "textarea" }
+    },
+    {
+      "type": "string",
+      "id": "secrets",
+      "label": "Secrets",
+      "description": "Dictionary of secrets to be used by the agent. Secrets are safely encrypted before storing in the database.",
+      "default": "{}",
+      "ui_options": {
+        "ui_widget": "CodeblockWidget",
+        "ui_options": {
+          "language": "json"
+        }
+      }
+    },
+    {
+      "id": "allowed_domains",
+      "type": "array",
+      "label": "Allowed Domains",
+      "description": "List of domains that the agent is allowed to visit. Add domains as individual text fields. If not set, the agent will be allowed to visit all domains (not recommended if you are using secrets).",
+      "items": {
+        "type": "string",
+        "label": "Domain",
+        "content": {
+          "type": ["managed"],
+          "content_objects": [
+            { "id": "domains" }
+          ]
+        }
+      },
+      "default": ["example.com", "anotherdomain.com"]
+    },
+    {
+      "id": "save_browser_data",
+      "type": "boolean",
+      "label": "Save Browser Data",
+      "description": "If set to True, the browser cookies and other data will be saved. Cookies are safely encrypted before storing in the database.",
+      "default": false
+    },
+    {
+      "id": "structured_output_json",
+      "type": "string",
+      "label": "Structured Output JSON",
+      "description": "If set, the agent will use this JSON schema as the output model.",
+      "ui_options": {
+        "ui_widget": "CodeblockWidget",
+        "ui_options": { "language": "json" }
+      }
+    },
+    {
+      "id": "llm_model",
+      "type": "string",
+      "label": "LLM Model",
+      "description": "LLM model to use.",
+      "default": "gpt-4.1",
+      "choices": {
+        "values": [
+          { "value": "gpt-4o", "label": "gpt-4o" },
+          { "value": "gpt-4o-mini", "label": "gpt-4o-mini" },
+          { "value": "gpt-4.1", "label": "gpt-4.1" },
+          { "value": "gpt-4.1-mini", "label": "gpt-4.1-mini" },
+          { "value": "gemini-2.5-flash", "label": "gemini-2.5-flash" },
+          { "value": "claude-sonnet-4-20250514", "label": "claude-sonnet-4-20250514" }
+        ]
+      }
+    },
+    {
+      "id": "use_adblock",
+      "type": "boolean",
+      "label": "Use Adblock",
+      "description": "If set to True, the agent will use an adblocker.",
+      "default": true
+    },
+    {
+      "id": "use_proxy",
+      "type": "boolean",
+      "label": "Use Proxy",
+      "description": "If set to True, the agent will use a (mobile) proxy.",
+      "default": true
+    },
+    {
+      "id": "proxy_country_code",
+      "type": "string",
+      "label": "Proxy Country Code",
+      "description": "Country code for residential proxy.",
+      "default": "us",
+      "choices": {
+        "values": [
+          { "value": "us", "label": "US" },
+          { "value": "fr", "label": "FR" },
+          { "value": "it", "label": "IT" },
+          { "value": "jp", "label": "JP" },
+          { "value": "au", "label": "AU" },
+          { "value": "de", "label": "DE" },
+          { "value": "fi", "label": "FI" },
+          { "value": "ca", "label": "CA" }
+        ]
+      }
+    },
+    {
+      "id": "highlight_elements",
+      "type": "boolean",
+      "label": "Highlight Elements",
+      "description": "If set to True, the agent will highlight the elements on the page.",
+      "default": true
+    },
+    {
+      "id": "included_file_names",
+      "type": "string",
+      "label": "Included File Names",
+      "description": "File names to include in the task.",
+      "ui_options": {
+        "ui_widget": "CodeblockWidget",
+        "ui_options": { "language": "json" }
+      }
+    },
+    {
+      "id": "browser_viewport_width",
+      "type": "integer",
+      "label": "Browser Viewport Width",
+      "description": "Width of the browser viewport in pixels.",
+      "default": 1280
+    },
+    {
+      "id": "browser_viewport_height",
+      "type": "integer",
+      "label": "Browser Viewport Height",
+      "description": "Height of the browser viewport in pixels.",
+      "default": 960
+    },
+    {
+      "id": "max_agent_steps",
+      "type": "integer",
+      "label": "Max Agent Steps",
+      "description": "Maximum number of agent steps to take.",
+      "default": 75
+    },
+    {
+      "id": "enable_public_share",
+      "type": "boolean",
+      "label": "Enable Public Share",
+      "description": "If set to True, enables public sharing of the task execution.",
+      "default": false
+    }
+  ],
+  "ui_options": {
+    "ui_order": [
+      "task",
+      "secrets",
+      "allowed_domains",
+      "save_browser_data",
+      "structured_output_json",
+      "llm_model",
+      "use_adblock",
+      "use_proxy",
+      "proxy_country_code",
+      "highlight_elements",
+      "included_file_names",
+      "browser_viewport_width",
+      "browser_viewport_height",
+      "max_agent_steps",
+      "enable_public_share"
+    ]
+  }
+}
